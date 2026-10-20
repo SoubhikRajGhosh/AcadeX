@@ -1,11 +1,4 @@
-AcadeX - put it on your phone
-=============================
-A phone can only install a web app from an https link, so host this folder once:
-
-Easiest (no account): go to https://app.netlify.com/drop on a computer and drag this whole folder in.
-Or GitHub Pages / Firebase Hosting (same as your other apps) - upload every file in this folder.
-
-Then on your phone, open the link in Chrome -> menu (3 dots) -> Install app.
+On your phone, open the link in Chrome -> menu (3 dots) -> Install app.
 (iPhone: Safari -> Share -> Add to Home Screen.)
 
 Your data lives on the phone under that link's address. Keep the same address, and use
