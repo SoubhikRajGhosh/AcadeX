@@ -202,11 +202,6 @@ const SAFE   = 85;      // green from here
 const GRADES = [[90,10,'O'],[80,9,'A+'],[70,8,'A'],[60,7,'B+'],[50,6,'B'],[40,5,'C'],[0,0,'F']];
 const COLS = ['#6ea8ff','#b38bff','#2ee59d'];
 
-/* ---------- real attendance from your Excel sheet (date -> one letter per class: P / A) ---------- */
-const SUBJECT_ORDER = ['C','C Lab','BEE','BEE Lab','EM','EP','EC','EGD'];
-const SEED_CREDITS = {'C':4,'C Lab':1,'BEE':4,'BEE Lab':1,'EM':3,'EP':3,'EC':2,'EGD':2};  // EM credit is a placeholder - edit it in the SGPA tab
-const SEED_ATT = {"C":{"2026-07-21":"P","2026-07-24":"P","2026-07-27":"P","2026-07-28":"PP","2026-08-04":"PPP","2026-08-07":"P","2026-08-10":"P","2026-08-11":"PP","2026-08-14":"P","2026-08-17":"P","2026-08-18":"PP","2026-08-21":"P","2026-08-24":"P","2026-08-25":"PP","2026-08-28":"A","2026-08-31":"P","2026-09-01":"P","2026-09-07":"P","2026-09-08":"PP","2026-09-11":"P","2026-09-18":"P","2026-09-28":"PP","2026-09-29":"PP","2026-10-02":"P","2026-10-05":"P","2026-10-06":"PP","2026-10-09":"P","2026-10-12":"P","2026-10-13":"PP","2026-10-16":"P"},"C Lab":{"2026-08-17":"PP","2026-08-19":"PP","2026-08-24":"PP","2026-08-26":"PP","2026-08-31":"PP","2026-09-02":"PP","2026-09-07":"PP","2026-09-09":"PP","2026-09-16":"PP","2026-09-28":"PPPP","2026-09-30":"PP","2026-10-05":"PP","2026-10-07":"PP","2026-10-12":"PP","2026-10-14":"PP"},"BEE":{"2026-07-22":"P","2026-07-23":"P","2026-07-24":"P","2026-07-27":"P","2026-07-29":"P","2026-07-30":"P","2026-08-03":"P","2026-08-05":"P","2026-08-06":"P","2026-08-07":"P","2026-08-10":"P","2026-08-12":"P","2026-08-14":"P","2026-08-17":"P","2026-08-19":"P","2026-08-20":"P","2026-08-21":"P","2026-08-24":"PP","2026-08-27":"P","2026-08-28":"PP","2026-08-31":"P","2026-09-02":"P","2026-09-03":"P","2026-09-04":"P","2026-09-07":"P","2026-09-09":"P","2026-09-10":"A","2026-09-11":"P","2026-09-16":"P","2026-09-17":"P","2026-09-30":"P","2026-10-01":"P","2026-10-05":"P","2026-10-07":"P","2026-10-08":"A","2026-10-09":"P","2026-10-12":"P","2026-10-14":"P","2026-10-15":"P","2026-10-16":"P"},"BEE Lab":{"2026-08-13":"PP","2026-08-20":"PP","2026-08-27":"PP","2026-09-03":"PP","2026-09-10":"PP","2026-09-17":"PP","2026-10-01":"PP","2026-10-15":"PP"},"EM":{"2026-07-08":"P","2026-07-16":"P","2026-07-20":"P","2026-07-23":"P","2026-07-24":"PP","2026-07-27":"P","2026-07-30":"P","2026-08-03":"P","2026-08-07":"P","2026-08-10":"A","2026-08-13":"P","2026-08-14":"PP","2026-08-17":"P","2026-08-20":"P","2026-08-21":"P","2026-08-26":"P","2026-08-27":"P","2026-08-28":"P","2026-08-31":"P","2026-09-03":"P","2026-09-04":"PPP","2026-09-10":"A","2026-09-11":"PP","2026-09-17":"P","2026-09-18":"PPP","2026-09-28":"P","2026-10-01":"P","2026-10-05":"P","2026-10-08":"A","2026-10-09":"PP","2026-10-12":"P","2026-10-15":"PP","2026-10-16":"PP"},"EP":{"2026-07-21":"P","2026-07-28":"P","2026-08-04":"P","2026-08-11":"PP","2026-08-13":"P","2026-08-18":"PP","2026-08-20":"P","2026-08-25":"PP","2026-08-26":"P","2026-09-01":"PP","2026-09-03":"P","2026-09-08":"PP","2026-09-10":"PP","2026-09-16":"AP","2026-09-17":"P","2026-09-29":"PP","2026-10-01":"P","2026-10-06":"PP","2026-10-13":"PP","2026-10-14":"A"},"EC":{"2026-07-22":"P","2026-07-24":"P","2026-07-29":"P","2026-08-07":"P","2026-08-12":"P","2026-08-14":"P","2026-08-19":"P","2026-08-21":"P","2026-08-26":"P","2026-09-02":"P","2026-09-04":"P","2026-09-09":"P","2026-09-11":"P","2026-09-16":"P","2026-09-30":"P","2026-10-09":"P","2026-10-14":"P","2026-10-16":"P"},"EGD":{"2026-07-28":"P","2026-08-04":"PP","2026-08-11":"PP","2026-08-18":"PP","2026-08-19":"P","2026-08-25":"PP","2026-09-01":"PP","2026-09-08":"PP"}};
-
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -218,24 +213,7 @@ const fd = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,
 const fmt = n => Number.isInteger(n) ? String(n) : String(Math.round(n*10)/10);
 const gradeOf = score => GRADES.find(g => score >= g[0]);
 
-/* ---------- seed data ---------- */
-function rng(seed){ return () => (seed = (seed*1664525 + 1013904223) >>> 0) / 4294967296; }
-function seedSem1(){
-  const r = rng(7);   // marks are still dummy until you enter the real ones
-  return SUBJECT_ORDER.map((name,i) => ({
-    id:uid(), name, credits:SEED_CREDITS[name], att:{...SEED_ATT[name]}, baseP:0, baseA:0,
-    parts: makeParts(name==='EGD' ? 2 : 3, r, i)
-  }));
-}
-function makeParts(n, r, i){
-  if(n===2) return [
-    {k:'mid',label:'Mid',max:50,score: Math.round(50*(.6+r()*.3))},
-    {k:'end',label:'End',max:50,score:null}];
-  return [
-    {k:'mid',label:'Mid',max:20,score: Math.round(20*(.55+r()*.4))},
-    {k:'end',label:'End',max:50,score:null},
-    {k:'int',label:'Int',max:30,score: i%2===0 ? Math.round(30*(.6+r()*.35)) : null}];
-}
+/* ---------- marks layout for new subjects ---------- */
 function newParts(n){
   return n===2
     ? [{k:'mid',label:'Mid',max:50,score:null},{k:'end',label:'End',max:50,score:null}]
@@ -245,8 +223,7 @@ function newParts(n){
 /* ---------- state ---------- */
 function fresh(){
   const sems = {}; for(let i=1;i<=8;i++) sems[i] = {subjects:[]};
-  sems[1].subjects = seedSem1();
-  return {cur:1, sems, marksDummy:true};
+  return {cur:1, sems, marksDummy:false};
 }
 function load(){ try{ const j = localStorage.getItem(KEY); if(j) return JSON.parse(j); }catch(e){} return fresh(); }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
@@ -359,7 +336,7 @@ function viewAtt(sem){
       <button class="btn" data-act="today" style="margin-top:17px">Today</button>
       <div class="chip"><b>${overall===null?'—':fmt(overall)+'%'}</b><span>Overall</span></div>
     </div>
-    ${cards || '<div class="empty">No subjects yet.</div>'}
+    ${cards || welcomeCard()}
     <button class="addbtn" data-act="add">＋ Add subject</button>`;
 }
 
@@ -395,7 +372,7 @@ function viewSgpa(sem){
       <div class="meta">${r ? `${fmt(r.credits)} credits counted` : 'Enter marks to see SGPA'}</div>
     </div>
     <div class="legend"><i></i> Hatched = projected from your scores so far · tap a subject to edit marks</div>
-    ${rows || '<div class="empty">No subjects yet.</div>'}
+    ${rows || welcomeCard()}
     <button class="addbtn" data-act="add">＋ Add subject</button>`;
 }
 
@@ -436,7 +413,6 @@ function renderDrawer(){
     <button class="di" data-act="export"><span>Backup (JSON)</span></button>
     <button class="di" data-act="import"><span>Restore backup</span></button>
     ${S.marksDummy ? '<button class="di" data-act="clear-marks"><span>Clear dummy marks</span></button>' : ''}
-    <button class="di" data-act="reset"><span>Reset to original Excel data</span></button>
     <button class="di" data-act="clear" style="color:var(--red)"><span>Clear everything</span></button>`;
 }
 
@@ -568,7 +544,6 @@ document.addEventListener('click', e => {
       setDrawer(false); toast('Backup downloaded'); break;
     }
     case 'import': $('#importFile').click(); break;
-    case 'reset': if(confirm('Reset everything back to the original Excel data? Anything you changed since then is lost.')){ S=fresh(); save(); setDrawer(false); render(); toast('Original data restored'); } break;
     case 'clear': if(confirm('Delete ALL data in all semesters? This cannot be undone.')){
         const sems={}; for(let i=1;i<=8;i++) sems[i]={subjects:[]}; S={cur:1,sems,marksDummy:false}; save(); setDrawer(false); render(); toast('Cleared');
       } break;
@@ -593,6 +568,10 @@ document.addEventListener('change', e => {
 let deferredPrompt = null, instDismissed = false;
 try{ instDismissed = !!localStorage.getItem('acadex_inst_dismissed'); }catch(e){}
 const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+function welcomeCard(){
+  return `<div class="card" style="text-align:center"><b style="font-size:17px">Welcome to AcadeX 👋</b>
+    <p style="color:var(--mut);font-size:13.5px;margin:8px 0 0;line-height:1.5">Tap <b>Add subject</b> to enter this semester's subjects. After each class, mark Present or Absent. Everything stays on your phone.</p></div>`;
+}
 function installBanner(){
   if(isStandalone() || !deferredPrompt || instDismissed) return '';
   return `<div class="install"><b>Install AcadeX on your phone</b><button class="btn pri" data-act="install">Install</button><button class="x" data-act="dismiss-install" aria-label="Dismiss">✕</button></div>`;
