@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f17">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AcadeX">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="description" content="AcadeX - attendance and marks tracker">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>AcadeX</title>
+<style>
+:root{
+  --bg:#0b0f17;--card:#131a26;--card2:#1a2332;--line:#263146;--text:#e8edf5;--mut:#8b97ab;
+  --red:#ff4d5e;--amber:#ffb020;--green:#2ee59d;--accent:#6ea8ff;--cover:#0e1420;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,select{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+#app{max-width:520px;margin:0 auto}
+header{position:sticky;top:0;z-index:20;background:rgba(11,15,23,.94);backdrop-filter:blur(10px);padding:calc(10px + env(safe-area-inset-top)) 14px 0;border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:12px;padding-bottom:10px}
+.icon{width:44px;height:44px;border-radius:12px;background:var(--card);display:grid;place-items:center;border:1px solid var(--line)}
+.icon svg{width:22px;height:22px;stroke:var(--text)}
+.ttl h1{margin:0;font-size:21px;font-weight:800;letter-spacing:.3px}
+.ttl h1 span{color:var(--accent)}
+.ttl p{margin:2px 0 0;font-size:12px;color:var(--mut)}
+.dummy{display:inline-block;background:#3a2a05;color:var(--amber);border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:6px;letter-spacing:.5px}
+nav{display:flex}
+nav button{flex:1;padding:12px 0 11px;font-weight:600;color:var(--mut);border-bottom:3px solid transparent;font-size:15px}
+nav button.on{color:var(--text);border-bottom-color:var(--accent)}
+main{padding:14px 14px 90px}
+
+/* toolbar */
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.toolbar .dt{flex:1}
+.toolbar label{display:block;font-size:11px;color:var(--mut);margin:0 0 4px 2px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;text-align:center;min-width:92px}
+.chip b{display:block;font-size:17px}
+.chip span{font-size:10px;color:var(--mut)}
+.btn{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-weight:600;font-size:14px}
+.btn.pri{background:var(--accent);color:#06101f;border-color:var(--accent)}
+.btn.dng{color:var(--red);border-color:#4a2330}
+.addbtn{width:100%;margin-top:6px;padding:14px;border:1.5px dashed var(--line);border-radius:14px;color:var(--mut);font-weight:600}
+
+/* attendance card */
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
+.arow{display:flex;gap:14px;align-items:center}
+.bub{width:78px;height:78px;flex:none;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:16px;color:#fff;position:relative;overflow:hidden;background:radial-gradient(circle at 35% 30%,#222d42,#121a28);border:2px solid var(--line);box-shadow:inset -6px -8px 14px rgba(0,0,0,.35),0 6px 18px rgba(0,0,0,.35)}
+.bub .liq{position:absolute;left:-2px;right:-2px;bottom:-2px;overflow:hidden;transition:height .8s ease}
+.bub .liq::after{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:rgba(255,255,255,.35)}
+.bub .liq .b{position:absolute;left:var(--l);bottom:-12%;width:var(--sz);height:var(--sz);border-radius:50%;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.4);animation:rise var(--d) linear var(--dl) infinite,sway calc(var(--d)/3) ease-in-out infinite alternate}
+@keyframes rise{0%{bottom:-12%;opacity:0}12%{opacity:.9}85%{opacity:.8}100%{bottom:96%;opacity:0}}
+@keyframes sway{from{margin-left:-2px}to{margin-left:3px}}
+.bub.r .liq{animation:jitter .18s linear infinite}
+.bub.y .liq{animation:jitter .5s linear infinite;animation-duration:.9s}
+@keyframes jitter{0%{transform:translate(0,0)}25%{transform:translate(1px,-1px)}50%{transform:translate(-1px,1px)}75%{transform:translate(1px,1px)}100%{transform:translate(0,0)}}
+@media (prefers-reduced-motion:reduce){.bub .liq,.bub .liq .b{animation:none}}
+.bub .txt{position:relative;z-index:2;text-shadow:0 1px 4px rgba(0,0,0,.65)}
+.bub::after{content:"";position:absolute;z-index:3;left:14px;top:9px;width:16px;height:8px;border-radius:50%;background:rgba(255,255,255,.35);transform:rotate(-25deg)}
+.bub.g{border-color:#1fbf84}.bub.g .liq{background:linear-gradient(180deg,#3df0ab,#1fbf84)}
+.bub.y{border-color:#e69a00}.bub.y .liq{background:linear-gradient(180deg,#ffc547,#e69a00)}
+.bub.r{border-color:#e0283c}.bub.r .liq{background:linear-gradient(180deg,#ff6b7a,#e0283c)}
+.bub.na{color:var(--mut)}
+.bub.pop{animation:pop .55s ease}
+.bub.pop::before{content:"";position:absolute;inset:-4px;border-radius:50%;border:3px solid currentColor;opacity:0;animation:ring .55s ease-out}
+@keyframes pop{0%{transform:scale(1)}30%{transform:scale(1.22)}55%{transform:scale(.93)}100%{transform:scale(1)}}
+@keyframes ring{0%{opacity:.8;transform:scale(.9)}100%{opacity:0;transform:scale(1.5)}}
+.ainfo{flex:1;min-width:0}
+.ainfo h3{margin:0;font-size:17px}
+.ainfo .cnt{font-size:12px;color:var(--mut);margin:2px 0 6px}
+.state{font-size:12.5px;font-weight:600}
+.state.g{color:var(--green)}.state.y{color:var(--amber)}.state.r{color:var(--red)}
+.meter{position:relative;height:10px;border-radius:6px;margin:14px 2px 18px;background:linear-gradient(90deg,#ff4d5e 0%,#ff4d5e 70%,#ffb020 75%,#ffb020 80%,#2ee59d 85%,#2ee59d 100%);overflow:visible}
+.mcover{position:absolute;right:0;top:0;bottom:0;background:var(--cover);border-radius:0 6px 6px 0;transition:width .5s ease}
+.tick{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff;opacity:.55}
+.tick i{position:absolute;top:15px;left:50%;transform:translateX(-50%);font-style:normal;font-size:10px;color:var(--mut)}
+.mark{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{padding:13px 0;border-radius:12px;font-weight:700;font-size:15px;background:var(--card2);border:1.5px solid var(--line);color:var(--mut);transition:.15s}
+.tile.p.on{background:rgba(46,229,157,.16);border-color:var(--green);color:var(--green)}
+.tile.a.on{background:rgba(255,77,94,.16);border-color:var(--red);color:var(--red)}
+.tile:active{transform:scale(.97)}
+
+.tile .n{font-size:12px;opacity:.85;margin-left:4px}
+.marked{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:12px;color:var(--mut)}
+.marked i{font-style:normal;font-weight:800;font-size:14px;margin-right:4px}
+.marked .mp{color:var(--green)}.marked .ma{color:var(--red)}
+.undo{padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card2);font-size:12px;font-weight:600;flex:none}
+.install{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#1c2d4d,#16223a);border:1px solid #2c4268;border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:13px}
+.install b{flex:1}
+.install .btn{padding:8px 12px}
+.install .x{color:var(--mut);padding:4px 8px;font-size:16px}
+.log .cl{color:var(--mut);font-size:11px;margin-left:4px}
+.steps{margin:0 0 6px;padding-left:18px;font-size:14px;line-height:1.6}
+.steps li{margin-bottom:8px}
+.note{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--mut);margin-top:10px}
+
+/* sgpa */
+.hero{background:linear-gradient(135deg,#17223a,#10192b);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px;text-align:center}
+.hero small{color:var(--mut);font-size:12px;letter-spacing:.6px;text-transform:uppercase}
+.hero .big{font-size:54px;font-weight:800;line-height:1.1;margin:4px 0}
+.hero .meta{font-size:12px;color:var(--mut)}
+.srow{display:flex;gap:12px;align-items:flex-end}
+.srow .l{flex:1;min-width:0}
+.srow .nm{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.srow .nm b{font-size:16px}
+.srow .nm span{font-size:11px;color:var(--mut)}
+.bar{display:flex;gap:4px}
+.seg{min-width:0}
+.trk{height:20px;border-radius:6px;background:var(--card2);border:1px solid var(--line);overflow:hidden}
+.fill{display:block;height:100%}
+.fill.proj{background:repeating-linear-gradient(45deg,var(--c) 0 4px,transparent 4px 8px);opacity:.6}
+.sl{display:block;font-size:10px;color:var(--mut);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.score{width:62px;text-align:center;flex:none;padding-bottom:14px}
+.score b{display:block;font-size:26px;line-height:1}
+.score span{font-size:10px;color:var(--mut)}
+.legend{font-size:11px;color:var(--mut);margin:2px 2px 12px;display:flex;gap:6px;align-items:center}
+.legend i{display:inline-block;width:16px;height:10px;border-radius:3px;background:repeating-linear-gradient(45deg,var(--accent) 0 4px,transparent 4px 8px);opacity:.7}
+
+/* cgpa */
+.sem{display:flex;align-items:center;justify-content:space-between}
+.sem b{font-size:16px}.sem small{color:var(--mut);display:block;margin-top:2px}
+.sem .v{font-size:24px;font-weight:800}
+.badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;background:#1c2d4d;color:var(--accent);margin-left:6px}
+
+/* drawer */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s;z-index:40}
+#scrim.on{opacity:1;pointer-events:auto}
+#drawer{position:fixed;top:0;bottom:0;left:0;width:82%;max-width:320px;background:#0f1520;border-right:1px solid var(--line);z-index:50;transform:translateX(-102%);transition:transform .28s ease;padding:calc(18px + env(safe-area-inset-top)) 14px 20px;overflow:auto}
+#drawer.on{transform:none}
+#drawer h4{margin:16px 6px 8px;font-size:11px;letter-spacing:1px;color:var(--mut);text-transform:uppercase}
+.di{display:flex;width:100%;justify-content:space-between;align-items:center;padding:13px 12px;border-radius:12px;font-weight:600;font-size:15px;text-align:left}
+.di small{color:var(--mut);font-weight:500}
+.di.on{background:#18253d;color:var(--accent)}
+.di.cg{background:linear-gradient(135deg,#1c2d4d,#16223a);margin-bottom:6px}
+
+/* sheet */
+#sheetWrap{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center}
+#sheetWrap.on{display:flex}
+#sheet{width:100%;max-width:520px;max-height:88vh;overflow:auto;background:#101827;border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));animation:up .25s ease}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+#sheet h2{margin:0 0 4px;font-size:19px}
+#sheet .sub{color:var(--mut);font-size:12.5px;margin-bottom:14px}
+.fld{margin-bottom:12px}
+.fld label{display:block;font-size:11px;color:var(--mut);margin:0 0 5px 2px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.acts{display:flex;gap:10px;margin-top:16px}
+.acts .btn{flex:1}
+.chips{display:flex;gap:8px;margin:12px 0}
+.chips button{flex:1;padding:9px 0;border-radius:10px;background:var(--card2);border:1px solid var(--line);font-weight:600;font-size:13px;color:var(--mut)}
+.chips button.on{color:var(--text);border-color:var(--accent);background:#18253d}
+.log{display:flex;align-items:center;justify-content:space-between;padding:11px 4px;border-bottom:1px solid var(--line)}
+.log .d{font-size:14px}
+.log .tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+.log .tag.P{background:rgba(46,229,157,.15);color:var(--green)}
+.log .tag.A{background:rgba(255,77,94,.15);color:var(--red)}
+.log .x{color:var(--mut);padding:4px 10px;font-size:16px}
+.empty{color:var(--mut);text-align:center;padding:26px 0;font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px}
+.stats div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.stats b{display:block;font-size:20px}.stats span{font-size:10.5px;color:var(--mut)}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,30px);background:#e8edf5;color:#0b0f17;padding:10px 16px;border-radius:12px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90%}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="top">
+      <button class="icon" data-act="menu" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <div class="ttl"><h1 id="title"></h1><p id="sub"></p></div>
+    </div>
+    <nav id="tabs"></nav>
+  </header>
+  <main id="main"></main>
+</div>
+<div id="scrim" data-act="close-drawer"></div>
+<aside id="drawer"></aside>
+<div id="sheetWrap" data-act="sheet-bg"><div id="sheet"></div></div>
+<div id="toast"></div>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+
+<script src="xlsx.mini.min.js"></script>
+<script>
+/* =========================================================
+   CONFIG — edit these if your university's rules differ
+   ========================================================= */
+const KEY = 'acadex_v1';
+const THRESH = 75;      // minimum attendance %
+const SAFE   = 85;      // green from here
+// [min score, grade point, letter]  (10-point scale)
+// Matches the university B.Tech grading table (marks/10 = grade range)
+const GRADES = [[90,10,'O'],[80,9,'A+'],[70,8,'A'],[60,7,'B+'],[50,6,'B'],[40,5,'C'],[0,0,'F']];
+const COLS = ['#6ea8ff','#b38bff','#2ee59d'];
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2,9);
+const pad = n => String(n).padStart(2,'0');
+const dstr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayStr = () => dstr(new Date());
+const fd = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); };
+const fmt = n => Number.isInteger(n) ? String(n) : String(Math.round(n*10)/10);
+const gradeOf = score => GRADES.find(g => score >= g[0]);
+
+/* ---------- marks layout for new subjects ---------- */
+function newParts(n){
+  return n===2
+    ? [{k:'mid',label:'Mid',max:50,score:null},{k:'end',label:'End',max:50,score:null}]
+    : [{k:'mid',label:'Mid',max:20,score:null},{k:'end',label:'End',max:50,score:null},{k:'int',label:'Int',max:30,score:null}];
+}
+
+/* ---------- state ---------- */
+function fresh(){
+  const sems = {}; for(let i=1;i<=8;i++) sems[i] = {subjects:[]};
+  return {cur:1, sems, marksDummy:false};
+}
+function load(){ try{ const j = localStorage.getItem(KEY); if(j) return JSON.parse(j); }catch(e){} return fresh(); }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+let S = load();
+let ui = {view:'sem', tab:'att', date:todayStr(), sheet:null, pop:null};
+const curSem = () => S.sems[S.cur];
+const findSub = id => curSem().subjects.find(s => s.id===id);
+
+/* ---------- attendance maths (integer-safe: 74.9 stays red) ---------- */
+function counts(s){
+  let P = s.baseP||0, A = s.baseA||0;
+  for(const d in s.att){ for(const ch of String(s.att[d])) ch==='P' ? P++ : A++; }
+  return {P, A, T:P+A};
+}
+function band(c){
+  if(!c.T) return 'na';
+  if(c.P*100 >= SAFE*c.T) return 'g';
+  if(c.P*100 >= THRESH*c.T) return 'y';
+  return 'r';
+}
+const pctFloor = c => c.T ? Math.floor(c.P/c.T*1000)/10 : null;   // never rounds up into a higher band
+function advice(c,b){
+  if(b==='na') return 'No classes recorded yet';
+  if(b==='r'){ const x = Math.ceil(3*c.T - 4*c.P); return `Attend next ${x} class${x>1?'es':''} to reach ${THRESH}%`; }
+  const x = Math.floor((100*c.P - THRESH*c.T)/THRESH);
+  return x>0 ? `Safe — can skip ${x} class${x>1?'es':''}` : `On the edge — don't skip`;
+}
+
+/* ---------- marks maths ---------- */
+function project(s){
+  let earned=0, done=0, pend=0;
+  s.parts.forEach(p => { if(p.score!=null){ earned+=p.score; done+=p.max; } else pend+=p.max; });
+  const ratio = done ? earned/done : 0;
+  return {earned, done, pend, ratio, proj: earned + ratio*pend, hasPending: pend>0};
+}
+function semSgpa(sem){
+  let c=0,w=0,pending=false;
+  sem.subjects.forEach(s => {
+    const p = project(s); if(!p.done) return;
+    c += s.credits; w += s.credits*gradeOf(p.proj)[1];
+    if(p.hasPending) pending = true;
+  });
+  return c ? {sgpa:w/c, credits:c, pending} : null;
+}
+function cgpa(){
+  let w=0,c=0,pending=false;
+  for(let i=1;i<=8;i++){ const r = semSgpa(S.sems[i]); if(r){ w+=r.sgpa*r.credits; c+=r.credits; pending = pending||r.pending; } }
+  return c ? {cgpa:w/c, credits:c, pending} : null;
+}
+
+/* ---------- render ---------- */
+function render(){
+  const sem = curSem();
+  $('#title').innerHTML = 'Acade<span>X</span>';
+  const showDummy = S.marksDummy && (ui.view==='cgpa' || ui.tab==='sgpa');
+  $('#sub').innerHTML = (ui.view==='cgpa' ? 'Final CGPA · all semesters' : `Semester ${S.cur} · ${ui.tab==='att' ? 'Attendance' : 'Marks &amp; SGPA'}`)
+    + (showDummy ? '<span class="dummy">DUMMY MARKS</span>' : '');
+  $('#tabs').style.display = ui.view==='cgpa' ? 'none' : 'flex';
+  $('#tabs').innerHTML = `<button data-act="tab" data-v="att" class="${ui.tab==='att'?'on':''}">Attendance</button>
+                          <button data-act="tab" data-v="sgpa" class="${ui.tab==='sgpa'?'on':''}">SGPA</button>`;
+  $('#main').innerHTML = ui.view==='cgpa' ? viewCgpa() : (ui.tab==='att' ? viewAtt(sem) : viewSgpa(sem));
+  if(ui.pop){ const id = ui.pop; ui.pop = null; setTimeout(()=>{},0); }
+  renderDrawer();
+}
+
+// boiling intensity: green = gentle, amber = simmering, red = violent
+function boil(b){
+  const cfg = {g:[4,3.6,.35,[4,6]], y:[8,2.2,.2,[4,8]], r:[18,.9,.08,[4,10]]}[b];
+  if(!cfg) return '';
+  const [n, base, step, [lo,hi]] = cfg;
+  let h = '';
+  for(let i=0;i<n;i++){
+    const l  = (i*37+11)%84 + 4;
+    const sz = lo + (i*5)%(hi-lo+1);
+    const d  = (base + ((i*7)%5)*step).toFixed(2);
+    const dl = (-(((i*11)%10)/10)*d).toFixed(2);
+    h += `<i class="b" style="--l:${l}%;--sz:${sz}px;--d:${d}s;--dl:${dl}s"></i>`;
+  }
+  return h;
+}
+
+function viewAtt(sem){
+  let P=0,T=0; sem.subjects.forEach(s=>{const c=counts(s);P+=c.P;T+=c.T;});
+  const overall = T ? Math.floor(P/T*1000)/10 : null;
+  const cards = sem.subjects.map(s => {
+    const c = counts(s), b = band(c), p = pctFloor(c), ent = String(s.att[ui.date]||''), nP = [...ent].filter(x=>x==='P').length, nA = ent.length - nP;
+    return `<div class="card" data-act="detail" data-id="${s.id}">
+      <div class="arow">
+        <div class="bub ${b} ${ui.pop===s.id?'pop':''}"><div class="liq" style="height:${p===null?0:p}%">${boil(b)}</div><span class="txt">${p===null?'—':fmt(p)+'%'}</span></div>
+        <div class="ainfo">
+          <h3>${esc(s.name)}</h3>
+          <div class="cnt">${c.P} present · ${c.A} absent · ${c.T} total</div>
+          <div class="state ${b}">${advice(c,b)}</div>
+        </div>
+      </div>
+      <div class="meter">
+        <div class="mcover" style="width:${p===null?100:100-p}%"></div>
+        <div class="tick" style="left:${THRESH}%"><i>${THRESH}</i></div>
+        <div class="tick" style="left:${SAFE}%"><i>${SAFE}</i></div>
+      </div>
+      <div class="mark">
+        <button class="tile p ${nP?'on':''}" data-act="mark" data-id="${s.id}" data-v="P">✓ Present${nP>1?`<b class="n">×${nP}</b>`:''}</button>
+        <button class="tile a ${nA?'on':''}" data-act="mark" data-id="${s.id}" data-v="A">✕ Absent${nA>1?`<b class="n">×${nA}</b>`:''}</button>
+      </div>
+      ${ent ? `<div class="marked"><span>On this date: ${[...ent].map(x=>x==='P'?'<i class="mp">✓</i>':'<i class="ma">✕</i>').join('')}</span><button class="undo" data-act="undo" data-id="${s.id}">↶ Undo last</button></div>` : ''}
+    </div>`;
+  }).join('');
+  return `${installBanner()}<div class="toolbar">
+      <div class="dt"><label>Marking for date</label><input type="date" id="datepick" value="${ui.date}" max="${todayStr()}"></div>
+      <button class="btn" data-act="today" style="margin-top:17px">Today</button>
+      <div class="chip"><b>${overall===null?'—':fmt(overall)+'%'}</b><span>Overall</span></div>
+    </div>
+    ${cards || welcomeCard()}
+    <button class="addbtn" data-act="add">＋ Add subject</button>`;
+}
+
+function barHtml(s){
+  const tot = s.parts.reduce((a,p)=>a+p.max,0), pr = project(s);
+  return '<div class="bar">' + s.parts.map((p,i) => {
+    const col = COLS[i%3]; let inner = '';
+    if(p.score!=null) inner = `<i class="fill" style="width:${p.score/p.max*100}%;background:${col}"></i>`;
+    else if(pr.done) inner = `<i class="fill proj" style="width:${pr.ratio*100}%;--c:${col}"></i>`;
+    return `<div class="seg" style="flex:${p.max}"><div class="trk">${inner}</div>
+      <span class="sl">${esc(p.label)} ${p.score==null?'–':fmt(p.score)}/${fmt(p.max)}</span></div>`;
+  }).join('') + '</div>';
+}
+
+function viewSgpa(sem){
+  const r = semSgpa(sem);
+  const rows = sem.subjects.map(s => {
+    const pr = project(s), has = pr.done>0;
+    const sc = has ? Math.floor(pr.proj*10)/10 : null;
+    return `<div class="card" data-act="edit" data-id="${s.id}">
+      <div class="srow">
+        <div class="l">
+          <div class="nm"><b>${esc(s.name)}</b><span>${fmt(s.credits)} credit${s.credits===1?'':'s'}</span></div>
+          ${barHtml(s)}
+        </div>
+        <div class="score"><b>${has?fmt(sc):'—'}</b><span>${has?`/100 · ${gradeOf(sc)[2]}`:'/100'}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="hero">
+      <small>${r && r.pending ? 'Projected SGPA' : 'SGPA'}</small>
+      <div class="big">${r ? r.sgpa.toFixed(2) : '—'}</div>
+      <div class="meta">${r ? `${fmt(r.credits)} credits counted` : 'Enter marks to see SGPA'}</div>
+    </div>
+    <div class="legend"><i></i> Hatched = projected from your scores so far · tap a subject to edit marks</div>
+    ${rows || welcomeCard()}
+    <button class="addbtn" data-act="add">＋ Add subject</button>`;
+}
+
+function viewCgpa(){
+  const g = cgpa();
+  let list = '';
+  for(let i=1;i<=8;i++){
+    const r = semSgpa(S.sems[i]);
+    list += `<div class="card sem" data-act="sem" data-v="${i}">
+      <div><b>Semester ${i}${r&&r.pending?'<span class="badge">PROJECTED</span>':''}</b>
+        <small>${r ? `${S.sems[i].subjects.length} subjects · ${fmt(r.credits)} credits` : 'No marks yet'}</small></div>
+      <div class="v">${r ? r.sgpa.toFixed(2) : '—'}</div></div>`;
+  }
+  return `<div class="hero">
+      <small>${g && g.pending ? 'Projected CGPA' : 'Final CGPA'}</small>
+      <div class="big">${g ? g.cgpa.toFixed(2) : '—'}</div>
+      <div class="meta">${g ? `Credit-weighted across ${fmt(g.credits)} credits` : 'No semester data yet'}</div>
+    </div>${list}`;
+}
+
+function renderDrawer(){
+  let sems = '';
+  for(let i=1;i<=8;i++){
+    const r = semSgpa(S.sems[i]);
+    sems += `<button class="di ${ui.view==='sem'&&S.cur===i?'on':''}" data-act="sem" data-v="${i}">
+      <span>Semester ${i}</span><small>${r?r.sgpa.toFixed(2):'—'}</small></button>`;
+  }
+  const inst = isStandalone() ? '' : `<button class="di" data-act="install"><span>📲 Install app on phone</span></button>`;
+  $('#drawer').innerHTML = `
+    <div class="ttl" style="padding:4px 6px 14px"><h1>Acade<span>X</span></h1><p>Attendance &amp; marks</p></div>
+    <button class="di cg ${ui.view==='cgpa'?'on':''}" data-act="cgpa"><span>🎓 Final CGPA</span></button>
+    <h4>Semesters</h4>${sems}
+    <h4>Excel</h4>
+    <button class="di" data-act="xlsx-all"><span>📊 Export all semesters</span></button>
+    <button class="di" data-act="xlsx-sem"><span>📄 Export Semester ${S.cur} only</span></button>
+    <h4>App &amp; data</h4>
+    ${inst}
+    <button class="di" data-act="export"><span>Backup (JSON)</span></button>
+    <button class="di" data-act="import"><span>Restore backup</span></button>
+    ${S.marksDummy ? '<button class="di" data-act="clear-marks"><span>Clear dummy marks</span></button>' : ''}
+    <button class="di" data-act="clear" style="color:var(--red)"><span>Clear everything</span></button>`;
+}
+
+/* ---------- sheets ---------- */
+function openSheet(html, key){ ui.sheet = key||true; $('#sheet').innerHTML = html; $('#sheetWrap').classList.add('on'); }
+function closeSheet(){ ui.sheet = null; $('#sheetWrap').classList.remove('on'); }
+
+function sheetDetail(id, filter){
+  const s = findSub(id); if(!s) return;
+  const c = counts(s), b = band(c), p = pctFloor(c);
+  const items = [];
+  Object.keys(s.att).sort().reverse().forEach(d => { const str = String(s.att[d]); for(let i=0;i<str.length;i++){ if(filter==='all' || str[i]===filter) items.push({d, i, n:str.length, v:str[i]}); } });
+  const log = items.map(o => `<div class="log"><span class="d">${fd(o.d)}${o.n>1?`<span class="cl">class ${o.i+1} of ${o.n}</span>`:''}</span>
+      <span><span class="tag ${o.v}">${o.v==='P'?'Present':'Absent'}</span>
+      <button class="x" data-act="del-att" data-id="${id}" data-d="${o.d}" data-i="${o.i}" aria-label="Remove">✕</button></span></div>`).join('');
+  openSheet(`<h2>${esc(s.name)}</h2>
+    <div class="sub">${p===null?'No data':fmt(p)+'% attendance'} · ${advice(c,b)}</div>
+    <div class="stats"><div><b style="color:var(--green)">${c.P}</b><span>Present</span></div>
+      <div><b style="color:var(--red)">${c.A}</b><span>Absent</span></div><div><b>${c.T}</b><span>Total</span></div></div>
+    ${(s.baseP||s.baseA)?`<div class="sub" style="margin:8px 2px 0">Includes ${s.baseP||0} present / ${s.baseA||0} absent from earlier records without dates.</div>`:''}
+    <div class="chips">
+      <button data-act="filter" data-id="${id}" data-v="all" class="${filter==='all'?'on':''}">All</button>
+      <button data-act="filter" data-id="${id}" data-v="P" class="${filter==='P'?'on':''}">Present</button>
+      <button data-act="filter" data-id="${id}" data-v="A" class="${filter==='A'?'on':''}">Absent</button></div>
+    ${log || '<div class="empty">Nothing here yet.</div>'}
+    <div class="acts"><button class="btn" data-act="edit" data-id="${id}">Edit subject</button>
+      <button class="btn pri" data-act="close-sheet">Done</button></div>`, 'detail:'+id+':'+filter);
+}
+
+function sheetEdit(id){
+  const s = findSub(id); if(!s) return;
+  const parts = s.parts.map((p,i) => `<div class="two fld">
+      <div><label>${esc(p.label)} score (blank = pending)</label><input id="f-s${i}" type="number" step="any" inputmode="decimal" value="${p.score==null?'':p.score}"></div>
+      <div><label>${esc(p.label)} max</label><input id="f-m${i}" type="number" step="any" inputmode="decimal" value="${p.max}"></div></div>`).join('');
+  openSheet(`<h2>Edit ${esc(s.name)}</h2><div class="sub">Maximum marks of all parts should add up to 100.</div>
+    <div class="two fld"><div><label>Subject name</label><input id="f-name" value="${esc(s.name)}"></div>
+      <div><label>Credits</label><input id="f-cr" type="number" step="any" inputmode="decimal" value="${s.credits}"></div></div>
+    ${parts}
+    <div class="acts"><button class="btn dng" data-act="delete" data-id="${id}">Delete</button>
+      <button class="btn pri" data-act="save-edit" data-id="${id}">Save</button></div>`, 'edit');
+}
+
+function sheetAdd(){
+  openSheet(`<h2>Add subject</h2><div class="sub">Added to Semester ${S.cur}.</div>
+    <div class="fld"><label>Subject name</label><input id="f-name" placeholder="e.g. Maths II" autocomplete="off"></div>
+    <div class="two fld"><div><label>Credits</label><input id="f-cr" type="number" step="any" inputmode="decimal" value="3"></div>
+      <div><label>Marks split</label><select id="f-parts"><option value="3">3 parts (Mid/End/Int)</option><option value="2">2 parts (Mid/End)</option></select></div></div>
+    <div class="acts"><button class="btn" data-act="close-sheet">Cancel</button>
+      <button class="btn pri" data-act="save-add">Add</button></div>`, 'add');
+  setTimeout(()=>{ const n=$('#f-name'); n && n.focus(); }, 300);
+}
+
+/* ---------- toast ---------- */
+let tt;
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),1900); }
+
+/* ---------- actions ---------- */
+function setDrawer(on){ $('#drawer').classList.toggle('on',on); $('#scrim').classList.toggle('on',on); }
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if(!el) return;
+  const a = el.dataset.act, id = el.dataset.id, v = el.dataset.v;
+  switch(a){
+    case 'menu': renderDrawer(); setDrawer(true); break;
+    case 'close-drawer': setDrawer(false); break;
+    case 'sem': S.cur = +v; ui.view='sem'; save(); setDrawer(false); render(); window.scrollTo(0,0); break;
+    case 'cgpa': ui.view='cgpa'; setDrawer(false); render(); window.scrollTo(0,0); break;
+    case 'tab': ui.tab = v; render(); break;
+    case 'today': ui.date = todayStr(); render(); break;
+    case 'mark': {
+      e.stopPropagation();
+      const s = findSub(id); if(!s) break;
+      s.att[ui.date] = String(s.att[ui.date]||'') + v;   // every tap = one class held that day
+      ui.pop = id; save(); render(); break;
+    }
+    case 'undo': {
+      e.stopPropagation();
+      const s = findSub(id); if(!s) break;
+      const cur = String(s.att[ui.date]||''); if(!cur) break;
+      const nx = cur.slice(0,-1); if(nx) s.att[ui.date] = nx; else delete s.att[ui.date];
+      save(); render(); toast('Last entry removed'); break;
+    }
+    case 'install': installApp(); break;
+    case 'dismiss-install': instDismissed = true; try{ localStorage.setItem('acadex_inst_dismissed','1'); }catch(err){} render(); break;
+    case 'xlsx-all': exportXlsx([1,2,3,4,5,6,7,8], 'all-semesters'); break;
+    case 'xlsx-sem': exportXlsx([S.cur], 'sem'+S.cur); break;
+    case 'clear-marks':
+      if(confirm('Remove all dummy marks so you can enter your real ones? Attendance is not touched.')){
+        for(let i=1;i<=8;i++) S.sems[i].subjects.forEach(s => s.parts.forEach(p => p.score = null));
+        S.marksDummy = false; save(); setDrawer(false); render(); toast('Dummy marks cleared');
+      } break;
+    case 'detail': sheetDetail(id,'all'); break;
+    case 'filter': sheetDetail(id,v); break;
+    case 'del-att': { const s=findSub(id); if(s){ const d=el.dataset.d, i=+el.dataset.i, str=String(s.att[d]||''), nx=str.slice(0,i)+str.slice(i+1); if(nx) s.att[d]=nx; else delete s.att[d]; save(); render(); const k=ui.sheet; const f=(k&&k.split(':')[2])||'all'; sheetDetail(id,f); } break; }
+    case 'edit': sheetEdit(id); break;
+    case 'add': sheetAdd(); break;
+    case 'close-sheet': closeSheet(); break;
+    case 'sheet-bg': if(e.target.id==='sheetWrap') closeSheet(); break;
+    case 'save-edit': {
+      const s = findSub(id); if(!s) break;
+      const name = $('#f-name').value.trim(), cr = parseFloat($('#f-cr').value);
+      if(!name) return toast('Enter a name');
+      if(!(cr>0)) return toast('Credits must be above 0');
+      const np = [];
+      for(let i=0;i<s.parts.length;i++){
+        const max = parseFloat($('#f-m'+i).value), raw = $('#f-s'+i).value.trim();
+        if(!(max>0)) return toast('Max marks must be above 0');
+        let score = null;
+        if(raw!==''){ score = parseFloat(raw); if(isNaN(score)||score<0) return toast('Invalid score'); if(score>max) return toast(`${s.parts[i].label} score is above its max`); }
+        np.push({...s.parts[i], max, score});
+      }
+      s.name=name; s.credits=cr; s.parts=np; save(); closeSheet(); render(); break;
+    }
+    case 'save-add': {
+      const name = $('#f-name').value.trim(), cr = parseFloat($('#f-cr').value);
+      if(!name) return toast('Enter a name');
+      if(!(cr>0)) return toast('Credits must be above 0');
+      curSem().subjects.push({id:uid(), name, credits:cr, att:{}, baseP:0, baseA:0, parts:newParts(+$('#f-parts').value)});
+      save(); closeSheet(); render(); break;
+    }
+    case 'delete':
+      if(confirm('Delete this subject and all its attendance and marks?')){
+        const L = curSem().subjects; L.splice(L.findIndex(s=>s.id===id),1); save(); closeSheet(); render();
+      } break;
+    case 'export': {
+      const blob = new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+      const u = URL.createObjectURL(blob), l = document.createElement('a');
+      l.href=u; l.download=`acadex-backup-${todayStr()}.json`; l.click(); setTimeout(()=>URL.revokeObjectURL(u),2000);
+      setDrawer(false); toast('Backup downloaded'); break;
+    }
+    case 'import': $('#importFile').click(); break;
+    case 'clear': if(confirm('Delete ALL data in all semesters? This cannot be undone.')){
+        const sems={}; for(let i=1;i<=8;i++) sems[i]={subjects:[]}; S={cur:1,sems,marksDummy:false}; save(); setDrawer(false); render(); toast('Cleared');
+      } break;
+  }
+});
+
+document.addEventListener('change', e => {
+  if(e.target.id==='datepick'){ ui.date = e.target.value || todayStr(); render(); }
+  if(e.target.id==='importFile'){
+    const f = e.target.files[0]; if(!f) return;
+    const rd = new FileReader();
+    rd.onload = () => { try{
+        const d = JSON.parse(rd.result);
+        if(!d.sems || !d.cur) throw 0;
+        S = d; if(S.marksDummy===undefined) S.marksDummy = !!S.dummy; delete S.dummy; save(); setDrawer(false); render(); toast('Backup restored');
+      }catch(err){ toast('That file is not a valid backup'); } };
+    rd.readAsText(f); e.target.value='';
+  }
+});
+
+/* ---------- install (PWA) ---------- */
+let deferredPrompt = null, instDismissed = false;
+try{ instDismissed = !!localStorage.getItem('acadex_inst_dismissed'); }catch(e){}
+const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+function welcomeCard(){
+  return `<div class="card" style="text-align:center"><b style="font-size:17px">Welcome to AcadeX 👋</b>
+    <p style="color:var(--mut);font-size:13.5px;margin:8px 0 0;line-height:1.5">Tap <b>Add subject</b> to enter this semester's subjects. After each class, mark Present or Absent. Everything stays on your phone.</p></div>`;
+}
+function installBanner(){
+  if(isStandalone() || !deferredPrompt || instDismissed) return '';
+  return `<div class="install"><b>Install AcadeX on your phone</b><button class="btn pri" data-act="install">Install</button><button class="x" data-act="dismiss-install" aria-label="Dismiss">✕</button></div>`;
+}
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; render(); });
+window.addEventListener('appinstalled', () => { deferredPrompt = null; toast('AcadeX installed'); render(); });
+function installApp(){
+  setDrawer(false);
+  if(deferredPrompt){
+    const dp = deferredPrompt; deferredPrompt = null;
+    dp.prompt();
+    dp.userChoice.finally(() => render());
+    return;
+  }
+  const local = location.protocol === 'file:';
+  openSheet(`<h2>Install AcadeX</h2>
+    <div class="sub">Get an app icon on your home screen that opens full-screen, without Chrome's address bar.</div>
+    ${local ? `<div class="note" style="margin:0 0 12px;color:var(--amber)">This copy is opened as a file on the phone. A phone can only install it from a hosted https link — put the AcadeX folder on hosting first (GitHub Pages, Netlify or Firebase Hosting), then open that link.</div>` : ''}
+    <ol class="steps">
+      <li><b>Android (Chrome):</b> tap the ⋮ menu, then <b>Install app</b> (or <b>Add to Home screen</b>).</li>
+      <li><b>iPhone (Safari):</b> tap Share, then <b>Add to Home Screen</b>.</li>
+    </ol>
+    <div class="note">Your data is saved on this phone, inside this site's address. Use <b>Backup (JSON)</b> now and then, and never change the site address without restoring a backup.</div>
+    <div class="acts"><button class="btn pri" data-act="close-sheet">Got it</button></div>`, 'install');
+}
+if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+/* ---------- Excel export (semester-wise) ---------- */
+const parseDate = d => { const [y,m,dd] = d.split('-').map(Number); return new Date(y, m-1, dd); };
+const statusLabel = b => ({g:'Safe (85% and above)', y:'OK (75% - 85%)', r:'Short (below 75%)', na:'No data'}[b]);
+function buildWorkbook(list){
+  const wb = XLSX.utils.book_new();
+  const opt = {cellDates:true, dateNF:'dd-mmm-yyyy'};
+  const sum = [['Semester','Subject','Credits','Present','Absent','Total classes','Attendance %','Status','What to do']];
+  list.forEach(n => S.sems[n].subjects.forEach(s => {
+    const c = counts(s), b = band(c), p = pctFloor(c);
+    sum.push(['Sem '+n, s.name, s.credits, c.P, c.A, c.T, p===null ? null : p, statusLabel(b), advice(c,b)]);
+  }));
+  const ws0 = XLSX.utils.aoa_to_sheet(sum, opt);
+  ws0['!cols'] = [{wch:10},{wch:14},{wch:8},{wch:9},{wch:9},{wch:13},{wch:13},{wch:20},{wch:38}];
+  XLSX.utils.book_append_sheet(wb, ws0, 'Summary');
+  list.forEach(n => {
+    const subs = S.sems[n].subjects;
+    const cols = subs.map(s => { const arr = []; Object.keys(s.att).sort().forEach(d => { for(const ch of String(s.att[d])) arr.push([parseDate(d), ch==='P' ? 'Present' : 'Absent']); }); return arr; });
+    const maxLen = Math.max(0, ...cols.map(a => a.length));
+    const rows = [['Semester '+n+' - attendance']];
+    const head = ['#']; subs.forEach(s => head.push(s.name, 'Status', null)); rows.push(head);
+    for(let i=0;i<maxLen;i++){ const r = [i+1]; cols.forEach(a => r.push(a[i] ? a[i][0] : null, a[i] ? a[i][1] : null, null)); rows.push(r); }
+    rows.push([]);
+    const line = (label, f) => { const r = [label]; subs.forEach(s => r.push(null, f(counts(s)), null)); rows.push(r); };
+    line('Present', c => c.P); line('Absent', c => c.A); line('Total', c => c.T);
+    line('Attendance %', c => { const p = c.T ? Math.floor(c.P/c.T*1000)/10 : null; return p===null ? null : p; });
+    const ws = XLSX.utils.aoa_to_sheet(rows, opt);
+    const wch = [{wch:14}]; subs.forEach(() => wch.push({wch:14},{wch:10},{wch:3}));
+    ws['!cols'] = wch;
+    XLSX.utils.book_append_sheet(wb, ws, 'Sem '+n);
+  });
+  return wb;
+}
+function exportXlsx(list, label){
+  if(typeof XLSX === 'undefined'){ toast('Excel library did not load - open the app once with internet'); return; }
+  list = list.filter(n => S.sems[n].subjects.length);
+  if(!list.length){ toast('No subjects to export'); return; }
+  try{
+    XLSX.writeFile(buildWorkbook(list), `AcadeX-attendance-${label}-${todayStr()}.xlsx`, {cellDates:true});
+    setDrawer(false); toast('Excel downloaded');
+  }catch(err){ toast('Could not create the Excel file'); }
+}
+
+render();
+</script>
+</body>
+</html>

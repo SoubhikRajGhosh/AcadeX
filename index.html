@@ -100,6 +100,9 @@ main{padding:14px 14px 90px}
 .log .cl{color:var(--mut);font-size:11px;margin-left:4px}
 .steps{margin:0 0 6px;padding-left:18px;font-size:14px;line-height:1.6}
 .steps li{margin-bottom:8px}
+.imrow{padding:10px 0;border-top:1px solid var(--line);font-size:13.5px}
+.imrow:first-of-type{border-top:0}
+.imrow .sub{margin:2px 0 6px!important;font-size:12px!important}
 .note{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--mut);margin-top:10px}
 
 /* sgpa */
@@ -188,6 +191,7 @@ main{padding:14px 14px 90px}
 <div id="sheetWrap" data-act="sheet-bg"><div id="sheet"></div></div>
 <div id="toast"></div>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
+<input type="file" id="xlsFile" accept=".xlsx,.xls,.csv" hidden>
 
 <script src="xlsx.mini.min.js"></script>
 <script>
@@ -408,6 +412,7 @@ function renderDrawer(){
     <h4>Excel</h4>
     <button class="di" data-act="xlsx-all"><span>📊 Export all semesters</span></button>
     <button class="di" data-act="xlsx-sem"><span>📄 Export Semester ${S.cur} only</span></button>
+    <button class="di" data-act="import-xlsx"><span>📥 Import attendance from Excel</span></button>
     <h4>App &amp; data</h4>
     ${inst}
     <button class="di" data-act="export"><span>Backup (JSON)</span></button>
@@ -496,6 +501,8 @@ document.addEventListener('click', e => {
       save(); render(); toast('Last entry removed'); break;
     }
     case 'install': installApp(); break;
+    case 'import-xlsx': setDrawer(false); $('#xlsFile').click(); break;
+    case 'apply-import': applyImport(); break;
     case 'dismiss-install': instDismissed = true; try{ localStorage.setItem('acadex_inst_dismissed','1'); }catch(err){} render(); break;
     case 'xlsx-all': exportXlsx([1,2,3,4,5,6,7,8], 'all-semesters'); break;
     case 'xlsx-sem': exportXlsx([S.cur], 'sem'+S.cur); break;
@@ -642,6 +649,108 @@ function exportXlsx(list, label){
     setDrawer(false); toast('Excel downloaded');
   }catch(err){ toast('Could not create the Excel file'); }
 }
+
+/* ---------- Excel import (attendance) ---------- */
+let pendingImport = null;
+const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function toISO(v){
+  if(v==null || v==='') return null;
+  const iso = (y,m,d) => { if(y<100) y += 2000; const dt = new Date(Date.UTC(y,m-1,d)); return (dt.getUTCFullYear()===y && dt.getUTCMonth()===m-1 && dt.getUTCDate()===d) ? `${y}-${pad(m)}-${pad(d)}` : null; };
+  if(typeof v === 'number'){ if(v<30000 || v>80000) return null; const dt = new Date(Date.UTC(1899,11,30) + Math.floor(v)*86400000); return iso(dt.getUTCFullYear(), dt.getUTCMonth()+1, dt.getUTCDate()); }
+  const s = String(v).trim(); let m;
+  if((m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))) return iso(+m[1],+m[2],+m[3]);
+  if((m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/))) return iso(+m[3],+m[2],+m[1]);   // day first
+  if((m = s.match(/^(\d{1,2})[\s-]+([A-Za-z]{3,})[\s,.-]+(\d{2,4})$/)) && MONTHS[m[2].slice(0,3).toLowerCase()]) return iso(+m[3], MONTHS[m[2].slice(0,3).toLowerCase()], +m[1]);
+  return null;
+}
+function parseWorkbook(wb){
+  const groups = [];
+  wb.SheetNames.forEach(sn => {
+    if(/^summary$/i.test(sn.trim())) return;
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, raw:true, defval:null});
+    let hr = -1, pairs = [];
+    for(let r=0; r<Math.min(rows.length,15) && hr<0; r++){
+      const row = rows[r] || [], found = [];
+      for(let c=0;c<row.length-1;c++){
+        const a = row[c], b = row[c+1];
+        if(typeof a==='string' && a.trim() && typeof b==='string' && /^status$/i.test(b.trim())) found.push({c, name:a.trim()});
+      }
+      if(found.length){ hr = r; pairs = found; }
+    }
+    if(hr<0) return;
+    let sem = null, m;
+    if((m = sn.match(/sem(?:ester)?\s*(\d)/i))) sem = +m[1];
+    else (rows[hr]||[]).slice(0, pairs[0].c).forEach(x => { if(sem==null && typeof x==='string' && (m = x.match(/sem(?:ester)?\s*(\d)/i))) sem = +m[1]; });
+    const subjects = [];
+    pairs.forEach(p => {
+      const att = {}; let n = 0, P = 0, A = 0;
+      for(let r=hr+1;r<rows.length;r++){
+        const row = rows[r] || [], d = toISO(row[p.c]), st = row[p.c+1];
+        if(!d || typeof st !== 'string') continue;
+        const k = st.trim().toLowerCase()[0];
+        if(k!=='p' && k!=='a') continue;
+        att[d] = (att[d]||'') + (k==='p' ? 'P' : 'A'); n++; k==='p' ? P++ : A++;
+      }
+      if(n) subjects.push({name:p.name, att, n, P, A, cr:/lab/i.test(p.name) ? 1 : 3, pt:3});
+    });
+    if(subjects.length) groups.push({label:sn, sem: (sem>=1 && sem<=8) ? sem : S.cur, subjects});
+  });
+  return groups;
+}
+function showImportPreview(){
+  const g = pendingImport;
+  const total = g.reduce((a,x) => a + x.subjects.reduce((b,s) => b + s.n, 0), 0);
+  const body = g.map((grp,gi) => `<div class="card" style="padding:12px">
+      <div class="fld"><label>Sheet "${esc(grp.label)}" - import into</label>
+        <select id="im-sem-${gi}">${[1,2,3,4,5,6,7,8].map(n => `<option value="${n}" ${n===grp.sem?'selected':''}>Semester ${n}</option>`).join('')}</select></div>
+      ${grp.subjects.map((s,si) => {
+        const ex = S.sems[grp.sem].subjects.some(x => x.name.toLowerCase()===s.name.toLowerCase());
+        return `<div class="imrow"><b>${esc(s.name)}</b>
+          <div class="sub">${s.P} present · ${s.A} absent · ${ex ? '<span style="color:var(--amber)">already exists - its attendance will be replaced</span>' : '<span style="color:var(--green)">new subject</span>'}</div>
+          ${ex ? '' : `<div class="two"><div><label>Credits</label><input id="im-cr-${gi}-${si}" type="number" step="any" inputmode="decimal" value="${s.cr}"></div>
+            <div><label>Marks split</label><select id="im-pt-${gi}-${si}"><option value="3" ${s.pt===3?'selected':''}>3 parts</option><option value="2" ${s.pt===2?'selected':''}>2 parts</option></select></div></div>`}
+        </div>`; }).join('')}
+    </div>`).join('');
+  openSheet(`<h2>Import from Excel</h2><div class="sub">Found ${total} classes. Check the semester and credits, then import.</div>${body}
+    <div class="acts"><button class="btn" data-act="close-sheet">Cancel</button><button class="btn pri" data-act="apply-import">Import</button></div>`, 'import');
+}
+function applyImport(){
+  if(!pendingImport) return;
+  let classes = 0, upd = 0, add = 0, first = null;
+  for(const g of pendingImport){ for(const s of g.subjects){ if(!(s.cr>0)){ toast('Credits must be above 0 for ' + s.name); return; } } }
+  pendingImport.forEach(g => {
+    const sem = S.sems[g.sem]; if(first==null) first = g.sem;
+    g.subjects.forEach(sb => {
+      const ex = sem.subjects.find(x => x.name.toLowerCase()===sb.name.toLowerCase());
+      if(ex){ ex.att = sb.att; upd++; }
+      else { sem.subjects.push({id:uid(), name:sb.name, credits:sb.cr, att:sb.att, baseP:0, baseA:0, parts:newParts(sb.pt)}); add++; }
+      classes += sb.n;
+    });
+  });
+  pendingImport = null; S.cur = first; ui.view = 'sem'; ui.tab = 'att';
+  save(); closeSheet(); render(); window.scrollTo(0,0);
+  toast(`Imported ${classes} classes (${add} new, ${upd} updated)`);
+}
+document.addEventListener('change', e => {
+  const id = e.target.id || '';
+  if(id==='xlsFile'){
+    const f = e.target.files[0]; if(!f) return;
+    if(typeof XLSX === 'undefined'){ toast('Excel library did not load - open the app once with internet'); e.target.value=''; return; }
+    const rd = new FileReader();
+    rd.onload = () => { try{
+        const groups = parseWorkbook(XLSX.read(rd.result, {type:'array'}));
+        if(!groups.length){ toast('No attendance found. Each subject needs a Date column followed by a Status column'); return; }
+        pendingImport = groups; showImportPreview();
+      }catch(err){ toast('Could not read that file'); } };
+    rd.readAsArrayBuffer(f); e.target.value = '';
+    return;
+  }
+  if(!pendingImport) return;
+  let m;
+  if((m = id.match(/^im-sem-(\d+)$/))){ pendingImport[+m[1]].sem = +e.target.value; showImportPreview(); }
+  else if((m = id.match(/^im-cr-(\d+)-(\d+)$/))) pendingImport[+m[1]].subjects[+m[2]].cr = parseFloat(e.target.value);
+  else if((m = id.match(/^im-pt-(\d+)-(\d+)$/))) pendingImport[+m[1]].subjects[+m[2]].pt = +e.target.value;
+});
 
 render();
 </script>
