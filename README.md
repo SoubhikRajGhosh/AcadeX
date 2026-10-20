@@ -71,7 +71,8 @@ Under every subject, the app also tells you either how many classes you can stil
 
 ## 4. Importing attendance from Excel
 
-Use the file **`attendance_example.xlsx`** in this repository as your guide. Copy it, replace the subject names and fill in your own dates.
+Use the file **`AcadeX-attendance-template.xlsx`** in this repository as your guide. Copy it, replace the subject names and fill in your own dates.
+Take the **`attendance_example.xlsx`** as a guide to see how to fill & what to fill.
 
 ### Layout
 
